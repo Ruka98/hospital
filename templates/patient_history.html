@@ -1,159 +1,143 @@
 {% extends "base.html" %}
 {% block content %}
-<style>
-    .history-header {
-        background: white;
-        padding: 24px;
-        border-radius: 12px;
-        border: 1px solid #e6e8ef;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        margin-bottom: 24px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .patient-avatar {
-        width: 64px;
-        height: 64px;
-        background: #eff6ff;
-        color: #3b82f6;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-        font-weight: bold;
-        margin-right: 16px;
-    }
-    .patient-info h1 { margin: 0; font-size: 24px; color: #111827; }
-    .patient-meta { color: #6b7280; margin-top: 4px; display: flex; gap: 16px; font-size: 14px; }
-
-    .section-title {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 12px;
-        color: #374151;
-        font-weight: 600;
-        font-size: 18px;
-    }
-
-    .empty-state {
-        text-align: center;
-        padding: 32px;
-        color: #9ca3af;
-        background: #f9fafb;
-        border-radius: 8px;
-        border: 1px dashed #e5e7eb;
-    }
-</style>
-
-<div class="history-header">
-    <div style="display:flex; align-items:center;">
-        <div class="patient-avatar">
-            {{ patient.name[0] | upper }}
+<div class="card mb-4 border-0 shadow-sm">
+    <div class="card-body p-4">
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center">
+                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 64px; height: 64px; font-size: 24px;">
+                    {{ patient.name[0] | upper }}
+                </div>
+                <div>
+                    <h2 class="mb-1">{{ patient.name }}</h2>
+                    <div class="text-muted small">
+                        <span class="me-3">ID: #{{ patient.id }}</span>
+                        {% if patient.phone %}<span class="me-3">📞 {{ patient.phone }}</span>{% endif %}
+                        {% if patient.dob %}<span class="me-3">🎂 {{ patient.dob }}</span>{% endif %}
+                        {% if patient.gender %}<span class="me-3">👤 {{ patient.gender }}</span>{% endif %}
+                    </div>
+                </div>
+            </div>
+            <a href="{{ url_for('doctor_dashboard') }}" class="btn btn-outline-secondary">← Back to Dashboard</a>
         </div>
-        <div class="patient-info">
-            <h1>{{ patient.name }}</h1>
-            <div class="patient-meta">
-                <span>ID: #{{ patient.id }}</span>
-                {% if patient.phone %}<span>📞 {{ patient.phone }}</span>{% endif %}
-                {% if patient.dob %}<span>🎂 {{ patient.dob }}</span>{% endif %}
-                {% if patient.gender %}<span>👤 {{ patient.gender }}</span>{% endif %}
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Reports / Scans Section (Most important often) -->
+    <div class="col-12">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 text-primary">📋 Reports & Scans</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if reports %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Details</th>
+                                <th>Added By</th>
+                                <th>Attachment</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in reports %}
+                            <tr>
+                                <td class="text-muted">{{ r.created_at.split(' ')[0] }}</td>
+                                <td><span class="badge bg-info text-dark">{{ r.report_type }}</span></td>
+                                <td>{{ r.report_text or "" }}</td>
+                                <td>{{ r.staff_name }} ({{ r.staff_role|capitalize }})</td>
+                                <td>
+                                    {% if r.image_filename %}
+                                        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('uploads', filename=r.image_filename) }}" target="_blank">
+                                            View File
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                    <div class="text-center py-5 text-muted bg-light">
+                        <p class="mb-0">No reports or scans found for this patient.</p>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
-    <a class="btn secondary" href="{{ url_for('doctor_dashboard') }}">← Back to Dashboard</a>
-</div>
-
-<div class="row">
-    <!-- Reports / Scans Section (Most important often) -->
-    <div class="card" style="grid-column: span 2;">
-        <div class="section-title">
-            <span>📋</span> Reports & Scans
-        </div>
-        {% if reports %}
-        <table>
-            <thead><tr><th>Date</th><th>Type</th><th>Details</th><th>Added By</th><th>Attachment</th></tr></thead>
-            <tbody>
-                {% for r in reports %}
-                <tr>
-                    <td class="muted">{{ r.created_at.split(' ')[0] }}</td>
-                    <td><span class="pill">{{ r.report_type }}</span></td>
-                    <td>{{ r.report_text or "" }}</td>
-                    <td>{{ r.staff_name }} ({{ r.staff_role|capitalize }})</td>
-                    <td>
-                        {% if r.image_filename %}
-                            <a class="btn small" href="{{ url_for('uploads', filename=r.image_filename) }}" target="_blank">
-                                View File
-                            </a>
-                        {% else %}
-                            <span class="muted">-</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-            <div class="empty-state">No reports or scans found for this patient.</div>
-        {% endif %}
-    </div>
 
     <!-- Active Assignments -->
-    <div class="card">
-        <div class="section-title">
-            <span>🩺</span> Tasks & Assignments
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+             <div class="card-header bg-white py-3">
+                <h5 class="mb-0 text-success">🩺 Tasks & Assignments</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if assignments %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light"><tr><th>Task</th><th>Assignee</th><th>Status</th></tr></thead>
+                        <tbody>
+                            {% for a in assignments %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold">{{ a.task_type }}</div>
+                                    <div class="text-muted small">{{ a.created_at.split(' ')[0] }}</div>
+                                </td>
+                                <td>{{ a.assignee_name }}<br><span class="text-muted small">{{ a.assignee_role|capitalize }}</span></td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if a.status == 'Completed' else 'warning' if a.status == 'In Progress' else 'secondary' }}">
+                                        {{ a.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                    <div class="text-center py-5 text-muted bg-light">No active tasks.</div>
+                {% endif %}
+            </div>
         </div>
-        {% if assignments %}
-        <table>
-            <thead><tr><th>Task</th><th>Assignee</th><th>Status</th></tr></thead>
-            <tbody>
-                {% for a in assignments %}
-                <tr>
-                    <td>
-                        <div style="font-weight:500;">{{ a.task_type }}</div>
-                        <div class="muted" style="font-size:12px;">{{ a.created_at.split(' ')[0] }}</div>
-                    </td>
-                    <td>{{ a.assignee_name }}<br><span class="muted" style="font-size:12px;">{{ a.assignee_role|capitalize }}</span></td>
-                    <td>
-                        <span class="pill {% if a.status == 'Completed' %}ok{% elif a.status == 'In Progress' %}warn{% endif %}">
-                            {{ a.status }}
-                        </span>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-            <div class="empty-state">No active tasks.</div>
-        {% endif %}
     </div>
 
     <!-- Doctor Orders -->
-    <div class="card">
-        <div class="section-title">
-            <span>📝</span> Clinical Orders
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+             <div class="card-header bg-white py-3">
+                <h5 class="mb-0 text-warning text-dark">📝 Clinical Orders</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if orders %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light"><tr><th>Order</th><th>Doctor</th><th>Notes</th></tr></thead>
+                        <tbody>
+                            {% for o in orders %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold">{{ o.order_type }}</div>
+                                    <div class="text-muted small">{{ o.created_at.split(' ')[0] }}</div>
+                                </td>
+                                <td>{{ o.doctor_name }}</td>
+                                <td>{{ o.notes or "-" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                    <div class="text-center py-5 text-muted bg-light">No orders yet.</div>
+                {% endif %}
+            </div>
         </div>
-        {% if orders %}
-        <table>
-            <thead><tr><th>Order</th><th>Doctor</th><th>Notes</th></tr></thead>
-            <tbody>
-                {% for o in orders %}
-                <tr>
-                    <td>
-                        <div style="font-weight:500;">{{ o.order_type }}</div>
-                        <div class="muted" style="font-size:12px;">{{ o.created_at.split(' ')[0] }}</div>
-                    </td>
-                    <td>{{ o.doctor_name }}</td>
-                    <td>{{ o.notes or "-" }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-            <div class="empty-state">No orders yet.</div>
-        {% endif %}
     </div>
 </div>
 {% endblock %}

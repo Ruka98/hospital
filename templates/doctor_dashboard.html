@@ -92,6 +92,28 @@
 
   <!-- Recent Activity Column -->
   <div class="col-lg-8">
+    <!-- Notifications Alert -->
+    {% if notifications %}
+    <div class="alert alert-info mb-4">
+      <h5 class="alert-heading">🔔 Recent Notifications</h5>
+      <ul class="list-group list-group-flush bg-transparent">
+        {% for n in notifications %}
+          {% if not n.is_read %}
+          <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center p-2">
+            <div>
+              {{ n.message }}
+              <small class="d-block text-muted">{{ n.created_at }}</small>
+            </div>
+            <form action="{{ url_for('staff_mark_notification_read', notif_id=n.id) }}" method="POST">
+              <button class="btn btn-sm btn-outline-secondary">Mark Read</button>
+            </form>
+          </li>
+          {% endif %}
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
     <ul class="nav nav-tabs mb-3" id="docTabs" role="tablist">
       <li class="nav-item">
         <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tickets" type="button">Active Tickets</button>
