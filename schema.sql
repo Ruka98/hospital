@@ -1,12 +1,5 @@
 PRAGMA foreign_keys = ON;
 
-CREATE TABLE IF NOT EXISTS admins (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  username TEXT NOT NULL UNIQUE,
-  password_hash TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
 -- Patients can login and view their own history
 CREATE TABLE IF NOT EXISTS patients (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -19,11 +12,11 @@ CREATE TABLE IF NOT EXISTS patients (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- All hospital staff (doctors, nurses, radiologists, etc.)
+-- All hospital staff (admins, doctors, nurses, radiologists, etc.)
 CREATE TABLE IF NOT EXISTS staff (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
-  role TEXT NOT NULL,                -- doctor | nurse | radiologist
+  role TEXT NOT NULL,                -- admin | doctor | nurse | radiologist
   category TEXT,                     -- specialty / department (e.g., Cardiologist, ICU Nurse, CT Radiology)
   username TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,

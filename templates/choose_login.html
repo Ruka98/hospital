@@ -1,99 +1,32 @@
 {% extends "base.html" %}
+
 {% block content %}
-<style>
-    .login-container {
-        max-width: 900px;
-        margin: 40px auto;
-        text-align: center;
-    }
-    .login-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 20px;
-        margin-top: 30px;
-    }
-    .login-card {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 16px;
-        padding: 24px;
-        text-decoration: none;
-        color: inherit;
-        transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-    .login-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 24px rgba(0,0,0,0.08);
-        border-color: #3b82f6;
-    }
-    .role-icon {
-        font-size: 48px;
-        margin-bottom: 16px;
-    }
-    .role-title {
-        font-size: 20px;
-        font-weight: 700;
-        margin: 0 0 8px 0;
-        color: #1f2937;
-    }
-    .role-desc {
-        color: #6b7280;
-        font-size: 14px;
-        margin: 0;
-        line-height: 1.5;
-    }
-    .admin-note {
-        margin-top: 40px;
-        padding: 16px;
-        background: #f3f4f6;
-        border-radius: 8px;
-        display: inline-block;
-        color: #4b5563;
-        font-size: 14px;
-    }
-</style>
+<div class="row justify-content-center align-items-center" style="min-height: 60vh;">
+  <div class="col-md-8 text-center">
+    <h1 class="display-4 mb-5">Welcome to Hospital System</h1>
+    <div class="row justify-content-center g-4">
 
-<div class="login-container">
-    <h1 style="font-size: 32px; margin-bottom: 10px;">Welcome to Hospital Management</h1>
-    <p class="muted">Please select your role to continue</p>
+      <div class="col-md-5">
+        <div class="card h-100 text-center p-4 hover-shadow">
+          <div class="card-body">
+            <h2 class="card-title text-primary mb-3">👨‍⚕️ Staff</h2>
+            <p class="card-text text-muted">Doctors, Nurses, Radiologists, Admin</p>
+            <a href="{{ url_for('staff_login') }}" class="btn btn-primary btn-lg w-100 stretched-link">Staff Login</a>
+          </div>
+        </div>
+      </div>
 
-    <div class="login-grid">
-        <a href="{{ url_for('patient_login') }}" class="login-card">
-            <div class="role-icon">👤</div>
-            <h2 class="role-title">Patient</h2>
-            <p class="role-desc">Access your medical history, view reports, and check appointments.</p>
-        </a>
+      <div class="col-md-5">
+        <div class="card h-100 text-center p-4 hover-shadow">
+          <div class="card-body">
+            <h2 class="card-title text-success mb-3">🤒 Patient</h2>
+            <p class="card-text text-muted">Access your history and reports</p>
+            <a href="{{ url_for('patient_login') }}" class="btn btn-success btn-lg w-100 stretched-link">Patient Login</a>
+          </div>
+        </div>
+      </div>
 
-        <a href="{{ url_for('doctor_login') }}" class="login-card">
-            <div class="role-icon">👨‍⚕️</div>
-            <h2 class="role-title">Doctor</h2>
-            <p class="role-desc">Manage patients, create orders, and assign tasks to staff.</p>
-        </a>
-
-        <a href="{{ url_for('nurse_login') }}" class="login-card">
-            <div class="role-icon">👩‍⚕️</div>
-            <h2 class="role-title">Nurse</h2>
-            <p class="role-desc">View assignments, update care status, and add patient notes.</p>
-        </a>
-
-        <a href="{{ url_for('radiologist_login') }}" class="login-card">
-            <div class="role-icon">☢️</div>
-            <h2 class="role-title">Radiologist</h2>
-            <p class="role-desc">Receive scan requests and upload imaging results.</p>
-        </a>
-
-        <a href="{{ url_for('admin_login') }}" class="login-card">
-            <div class="role-icon">⚙️</div>
-            <h2 class="role-title">Admin</h2>
-            <p class="role-desc">System configuration, user management, and staff oversight.</p>
-        </a>
     </div>
-
-    <div class="admin-note">
-        <strong>Demo Access:</strong> Default Admin credentials are <code>admin</code> / <code>admin123</code>
-    </div>
+  </div>
 </div>
 {% endblock %}

@@ -1,127 +1,51 @@
 {% extends "base.html" %}
+
 {% block content %}
-  <div class="row">
-    <div class="card">
-      <h2 style="margin-top:0;">Create Staff</h2>
-      <p class="muted">Admins can add doctors, nurses, and radiologists (with category/specialty).</p>
-      <form method="post" action="{{ url_for('admin_create_staff') }}">
-        <div class="row">
-          <div>
-            <label>Name</label>
-            <input name="name" required placeholder="Full Name" />
-          </div>
-          <div>
-            <label>Role</label>
-            <select name="role" id="roleSelect" required onchange="updateCategories()">
-              <option value="" disabled selected>Select Role</option>
-              <option value="doctor">Doctor</option>
-              <option value="nurse">Nurse</option>
-              <option value="radiologist">Radiologist</option>
-            </select>
-          </div>
-        </div>
-
-        <div style="height:10px;"></div>
-
-        <label>Category / Specialty</label>
-        <div class="row" style="gap: 8px; grid-template-columns: 1fr 1fr;">
-            <select id="categorySelect" name="category_select" onchange="checkOther(this)">
-                <option value="" disabled selected>Select Category</option>
-                <!-- Options populated by JS -->
-                <option value="Other">Other (Type below)</option>
-            </select>
-            <input id="otherCategoryInput" name="category_other" placeholder="Type Category..." style="display:none;" />
-        </div>
-        <!-- Hidden input to store the final category value sent to server -->
-        <input type="hidden" name="category" id="finalCategory" />
-
-        <div style="height:10px;"></div>
-        <div class="row">
-          <div>
-            <label>Username</label>
-            <input name="username" required placeholder="Login Username" />
-          </div>
-          <div>
-            <label>Password</label>
-            <input name="password" required placeholder="Login Password" />
-          </div>
-        </div>
-
-        <div style="height:10px;"></div>
-        <div class="row">
-          <div>
-            <label>Phone (optional)</label>
-            <input name="phone" placeholder="Contact Number" />
-          </div>
-          <div>
-            <label>Available now?</label>
-            <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
-              <input type="checkbox" name="is_available" checked style="width:auto;" />
-              <span class="muted">Doctors can assign only to available staff</span>
-            </div>
-          </div>
-        </div>
-
-        <div style="height:14px;"></div>
-        <button class="btn" type="submit">Create Staff</button>
-      </form>
+<div class="row dashboard-header">
+  <div class="col d-flex justify-content-between align-items-center">
+    <div>
+      <h1>Admin Dashboard</h1>
+      <p class="text-muted">System Management</p>
     </div>
-
-    <div class="card">
-      <h2 style="margin-top:0;">Create Patient</h2>
-      <p class="muted">Patients can login using admin-created credentials.</p>
-      <form method="post" action="{{ url_for('admin_create_patient') }}">
-        <label>Name</label>
-        <input name="name" required placeholder="Patient Full Name" />
-
-        <div style="height:10px;"></div>
-        <div class="row">
-          <div>
-            <label>Username</label>
-            <input name="username" required placeholder="Login Username" />
-          </div>
-          <div>
-            <label>Password</label>
-            <input name="password" required placeholder="Login Password" />
-          </div>
-        </div>
-
-        <div style="height:10px;"></div>
-        <div class="row">
-          <div>
-            <label>Phone (optional)</label>
-            <input name="phone" placeholder="Contact Number" />
-          </div>
-          <div>
-            <label>DOB (optional)</label>
-            <input name="dob" placeholder="YYYY-MM-DD" />
-          </div>
-        </div>
-
-        <div style="height:10px;"></div>
-        <label>Gender (optional)</label>
-        <select name="gender">
-            <option value="" disabled selected>Select Gender</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-            <option value="Other">Other</option>
-        </select>
-
-        <div style="height:14px;"></div>
-        <button class="btn" type="submit">Create Patient</button>
-      </form>
+    <!-- Create Buttons -->
+    <div>
+      <button class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#createStaffModal">
+        ➕ Add Staff
+      </button>
+      <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createPatientModal">
+        ➕ Add Patient
+      </button>
     </div>
   </div>
+</div>
 
-  <div style="height:16px;"></div>
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
+  <li class="nav-item">
+    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#staff" type="button">Staff Management</button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#patients" type="button">Patients</button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#activity" type="button">System Activity</button>
+  </li>
+</ul>
 
-  <div class="row">
-    <div class="card">
-      <h2 style="margin-top:0;">Staff List</h2>
-      <table>
-        <thead>
+<div class="tab-content">
+  <!-- Staff Tab -->
+  <div class="tab-pane fade show active" id="staff">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
           <tr>
-            <th>ID</th><th>Name</th><th>Role</th><th>Category</th><th>Username</th><th>Available</th><th class="right">Actions</th>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Role</th>
+            <th>Category/Specialty</th>
+            <th>Username</th>
+            <th>Status</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -129,22 +53,23 @@
           <tr>
             <td>{{ s.id }}</td>
             <td>{{ s.name }}</td>
-            <td><span class="pill">{{ s.role|capitalize }}</span></td>
-            <td>{{ s.category or "-" }}</td>
+            <td>
+              <span class="badge bg-{{ 'danger' if s.role=='admin' else 'primary' if s.role=='doctor' else 'success' if s.role=='nurse' else 'info' }}">
+                {{ s.role|capitalize }}
+              </span>
+            </td>
+            <td>{{ s.category or '-' }}</td>
             <td>{{ s.username }}</td>
             <td>
-              {% if s.is_available %}
-                <span class="pill ok">Yes</span>
-              {% else %}
-                <span class="pill warn">No</span>
-              {% endif %}
-            </td>
-            <td class="right">
-              <form method="post" action="{{ url_for('admin_toggle_availability', staff_id=s.id) }}" style="display:inline;">
-                <button class="btn secondary small" type="submit">Toggle</button>
+              <form action="{{ url_for('admin_toggle_availability', staff_id=s.id) }}" method="POST" class="d-inline">
+                <button class="btn btn-sm btn-{{ 'success' if s.is_available else 'secondary' }} rounded-pill">
+                  {{ 'Available' if s.is_available else 'Unavailable' }}
+                </button>
               </form>
-              <form method="post" action="{{ url_for('admin_delete_staff', staff_id=s.id) }}" style="display:inline;">
-                <button class="btn secondary small" type="submit" onclick="return confirm('Delete staff?');">Delete</button>
+            </td>
+            <td>
+              <form action="{{ url_for('admin_delete_staff', staff_id=s.id) }}" method="POST" onsubmit="return confirm('Delete this staff member?');">
+                <button class="btn btn-sm btn-outline-danger">Delete</button>
               </form>
             </td>
           </tr>
@@ -152,25 +77,24 @@
         </tbody>
       </table>
     </div>
+  </div>
 
-    <div class="card">
-      <h2 style="margin-top:0;">Patients List</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th><th>Name</th><th>Username</th><th>Phone</th><th class="right">Actions</th>
-          </tr>
-        </thead>
+  <!-- Patients Tab -->
+  <div class="tab-pane fade" id="patients">
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead><tr><th>ID</th><th>Name</th><th>Username</th><th>DOB</th><th>Phone</th><th>Actions</th></tr></thead>
         <tbody>
           {% for p in patients %}
           <tr>
             <td>{{ p.id }}</td>
             <td>{{ p.name }}</td>
             <td>{{ p.username }}</td>
-            <td>{{ p.phone or "-" }}</td>
-            <td class="right">
-              <form method="post" action="{{ url_for('admin_delete_patient', patient_id=p.id) }}" style="display:inline;">
-                <button class="btn secondary small" type="submit" onclick="return confirm('Delete patient?');">Delete</button>
+            <td>{{ p.dob }}</td>
+            <td>{{ p.phone }}</td>
+            <td>
+              <form action="{{ url_for('admin_delete_patient', patient_id=p.id) }}" method="POST" onsubmit="return confirm('Delete this patient?');">
+                <button class="btn btn-sm btn-outline-danger">Delete</button>
               </form>
             </td>
           </tr>
@@ -180,91 +104,152 @@
     </div>
   </div>
 
-  <div style="height:16px;"></div>
-
-  <div class="card">
-    <h2 style="margin-top:0;">Recent Assignments</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th><th>Patient</th><th>Doctor</th><th>Assignee</th><th>Task</th><th>Status</th><th>Created</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for a in recent_assignments %}
-        <tr>
-          <td>{{ a.id }}</td>
-          <td>{{ a.patient_name }}</td>
-          <td>{{ a.doctor_name }}</td>
-          <td>{{ a.assignee_name }} ({{ a.assignee_role|capitalize }})</td>
-          <td>{{ a.task_type }}</td>
-          <td>
-            <span class="pill {% if a.status == 'Completed' %}ok{% elif a.status == 'In Progress' %}warn{% endif %}">
-              {{ a.status }}
-            </span>
-          </td>
-          <td class="muted">{{ a.created_at }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <!-- Activity Tab -->
+  <div class="tab-pane fade" id="activity">
+    <h5 class="mb-3">Recent Ticket Assignments</h5>
+    <div class="table-responsive">
+      <table class="table table-sm text-muted">
+        <thead><tr><th>Date</th><th>Patient</th><th>Task</th><th>Doctor</th><th>Assigned To</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for a in recent_assignments %}
+          <tr>
+            <td>{{ a.created_at }}</td>
+            <td>{{ a.patient_name }}</td>
+            <td>{{ a.task_type }}</td>
+            <td>{{ a.doctor_name }}</td>
+            <td>{{ a.assignee_name }} ({{ a.assignee_role }})</td>
+            <td>{{ a.status }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
+</div>
+
+<!-- Modals -->
+<div class="modal fade" id="createStaffModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add New Staff</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form action="{{ url_for('admin_create_staff') }}" method="POST">
+          <div class="mb-3">
+            <label class="form-label">Role</label>
+            <select name="role" class="form-select" required onchange="toggleCategory(this.value)">
+              <option value="">-- Select Role --</option>
+              <option value="doctor">Doctor</option>
+              <option value="nurse">Nurse</option>
+              <option value="radiologist">Radiologist</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Name</label>
+            <input type="text" name="name" class="form-control" required>
+          </div>
+
+          <div class="mb-3" id="cat-container">
+            <label class="form-label">Category / Specialty</label>
+            <input type="hidden" name="category" id="final_category">
+            <select id="cat_select" name="category_select" class="form-select mb-2" onchange="checkOther(this)">
+               <option value="">-- Select or Type --</option>
+               <option value="General">General</option>
+               <option value="Cardiology">Cardiology</option>
+               <option value="Pediatrics">Pediatrics</option>
+               <option value="Radiology">Radiology</option>
+               <option value="ICU">ICU</option>
+               <option value="Other">Other (Type below)</option>
+            </select>
+            <input type="text" id="cat_other" name="category_other" class="form-control" placeholder="Enter specialty..." style="display:none;">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Username</label>
+            <input type="text" name="username" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Password</label>
+            <input type="password" name="password" class="form-control" required>
+          </div>
+          <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" name="is_available" checked>
+            <label class="form-check-label">Available immediately</label>
+          </div>
+          <button type="submit" class="btn btn-primary w-100">Create Account</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="createPatientModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Register New Patient</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form action="{{ url_for('admin_create_patient') }}" method="POST">
+          <div class="mb-3">
+            <label class="form-label">Full Name</label>
+            <input type="text" name="name" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Date of Birth</label>
+            <input type="date" name="dob" class="form-control">
+          </div>
+          <div class="mb-3">
+             <label class="form-label">Gender</label>
+             <select name="gender" class="form-select">
+               <option value="Male">Male</option>
+               <option value="Female">Female</option>
+               <option value="Other">Other</option>
+             </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Phone</label>
+            <input type="text" name="phone" class="form-control">
+          </div>
+          <hr>
+          <div class="mb-3">
+            <label class="form-label">Username</label>
+            <input type="text" name="username" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Password</label>
+            <input type="password" name="password" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-success w-100">Register Patient</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
-    const categories = {
-        'doctor': ['General Practitioner', 'Cardiologist', 'Neurologist', 'Pediatrician', 'Surgeon', 'Dermatologist'],
-        'nurse': ['General Nurse', 'ICU Nurse', 'Pediatric Nurse', 'Surgical Nurse', 'Emergency Nurse'],
-        'radiologist': ['X-Ray Technician', 'MRI Technician', 'CT Scan Specialist', 'Ultrasound Technician']
-    };
-
-    function updateCategories() {
-        const role = document.getElementById('roleSelect').value;
-        const categorySelect = document.getElementById('categorySelect');
-        const otherInput = document.getElementById('otherCategoryInput');
-
-        categorySelect.innerHTML = '<option value="" disabled selected>Select Category</option>';
-
-        if (categories[role]) {
-            categories[role].forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat;
-                option.textContent = cat;
-                categorySelect.appendChild(option);
-            });
-        }
-
-        const otherOption = document.createElement('option');
-        otherOption.value = 'Other';
-        otherOption.textContent = 'Other (Type below)';
-        categorySelect.appendChild(otherOption);
-
-        // Reset other input
+function checkOther(select) {
+    const otherInput = document.getElementById('cat_other');
+    if (select.value === 'Other') {
+        otherInput.style.display = 'block';
+        otherInput.required = true;
+    } else {
         otherInput.style.display = 'none';
-        otherInput.value = '';
+        otherInput.required = false;
     }
+}
 
-    function checkOther(select) {
-        const otherInput = document.getElementById('otherCategoryInput');
-        if (select.value === 'Other') {
-            otherInput.style.display = 'block';
-            otherInput.required = true;
-        } else {
-            otherInput.style.display = 'none';
-            otherInput.required = false;
-        }
+function toggleCategory(role) {
+    const container = document.getElementById('cat-container');
+    if (role === 'admin') {
+        container.style.display = 'none';
+    } else {
+        container.style.display = 'block';
     }
-
-    // On form submit, populate the hidden input
-    document.querySelector('form[action="{{ url_for("admin_create_staff") }}"]').addEventListener('submit', function(e) {
-        const select = document.getElementById('categorySelect');
-        const otherInput = document.getElementById('otherCategoryInput');
-        const finalInput = document.getElementById('finalCategory');
-
-        if (select.value === 'Other') {
-            finalInput.value = otherInput.value;
-        } else {
-            finalInput.value = select.value;
-        }
-    });
+}
 </script>
 {% endblock %}

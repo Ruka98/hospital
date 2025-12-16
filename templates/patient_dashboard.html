@@ -1,79 +1,96 @@
 {% extends "base.html" %}
+
 {% block content %}
-  <div class="card">
-    <h1 style="margin-top:0;">Patient Dashboard</h1>
-    <p class="muted" style="margin-top:0;">
-      Welcome <b>{{ patient.name }}</b>. Here is your history: orders, assignments, reports and scans.
-    </p>
+<div class="row dashboard-header">
+  <div class="col">
+    <h1>Patient Dashboard</h1>
+    <p class="text-muted">Welcome, {{ patient.name }}</p>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-4">
+    <div class="card mb-3">
+      <div class="card-header">My Profile</div>
+      <div class="card-body">
+        <p><strong>Username:</strong> {{ patient.username }}</p>
+        <p><strong>Phone:</strong> {{ patient.phone }}</p>
+        <p><strong>DOB:</strong> {{ patient.dob }}</p>
+        <p><strong>Gender:</strong> {{ patient.gender }}</p>
+      </div>
+    </div>
   </div>
 
-  <div style="height:14px;"></div>
+  <div class="col-md-8">
+    <ul class="nav nav-tabs mb-3" id="patientTabs" role="tablist">
+      <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#results" type="button">Results & Reports</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#history" type="button">Clinical History</button>
+      </li>
+    </ul>
 
-  <div class="card">
-    <h2 style="margin-top:0;">Orders</h2>
-    <table>
-      <thead><tr><th>ID</th><th>Doctor</th><th>Type</th><th>Status</th><th>Notes</th><th>Created</th></tr></thead>
-      <tbody>
-        {% for o in my_orders %}
-        <tr>
-          <td>{{ o.id }}</td>
-          <td>{{ o.doctor_name }}{% if o.doctor_specialty %} ({{ o.doctor_specialty }}){% endif %}</td>
-          <td>{{ o.order_type }}</td>
-          <td>{{ o.status }}</td>
-          <td>{{ o.notes or "" }}</td>
-          <td class="muted">{{ o.created_at }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  <div style="height:14px;"></div>
-
-  <div class="card">
-    <h2 style="margin-top:0;">Assignments (Nurses / Radiologists)</h2>
-    <table>
-      <thead><tr><th>ID</th><th>Doctor</th><th>Assignee</th><th>Task</th><th>Status</th><th>Notes</th><th>Created</th></tr></thead>
-      <tbody>
-        {% for a in my_assignments %}
-        <tr>
-          <td>{{ a.id }}</td>
-          <td>{{ a.doctor_name }}</td>
-          <td>{{ a.assignee_name }} ({{ a.assignee_role }})</td>
-          <td>{{ a.task_type }}</td>
-          <td>{{ a.status }}</td>
-          <td>{{ a.notes or "" }}</td>
-          <td class="muted">{{ a.created_at }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  <div style="height:14px;"></div>
-
-  <div class="card">
-    <h2 style="margin-top:0;">Reports & Scans</h2>
-    <table>
-      <thead><tr><th>ID</th><th>Added By</th><th>Type</th><th>Text</th><th>File</th><th>Created</th></tr></thead>
-      <tbody>
-        {% for r in my_reports %}
-        <tr>
-          <td>{{ r.id }}</td>
-          <td>{{ r.staff_name }} ({{ r.staff_role }})</td>
-          <td>{{ r.report_type }}</td>
-          <td>{{ r.report_text or "" }}</td>
-          <td>
+    <div class="tab-content">
+      <!-- Results Tab -->
+      <div class="tab-pane fade show active" id="results">
+        <div class="list-group">
+          {% for r in my_reports %}
+          <div class="list-group-item">
+            <div class="d-flex w-100 justify-content-between">
+              <h5 class="mb-1">{{ r.report_type }}</h5>
+              <small>{{ r.created_at[:16] }}</small>
+            </div>
+            <p class="mb-1">{{ r.report_text }}</p>
             {% if r.image_filename %}
-              <a href="{{ url_for('uploads', filename=r.image_filename) }}" target="_blank">Open</a>
-            {% else %}
-              <span class="muted">-</span>
+            <div class="mt-2">
+              <a href="{{ url_for('uploads', filename=r.image_filename) }}" class="btn btn-sm btn-outline-primary" target="_blank">View Image/Scan</a>
+            </div>
             {% endif %}
-          </td>
-          <td class="muted">{{ r.created_at }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+            <small class="text-muted">By: {{ r.staff_name }} ({{ r.staff_role }})</small>
+          </div>
+          {% else %}
+          <p class="text-center text-muted py-3">No reports available.</p>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- History Tab -->
+      <div class="tab-pane fade" id="history">
+        <h5 class="mt-3">Doctor Orders</h5>
+        <div class="table-responsive mb-4">
+          <table class="table table-sm">
+            <thead><tr><th>Date</th><th>Doctor</th><th>Type</th><th>Notes</th></tr></thead>
+            <tbody>
+              {% for o in my_orders %}
+              <tr>
+                <td>{{ o.created_at[:10] }}</td>
+                <td>Dr. {{ o.doctor_name }}</td>
+                <td>{{ o.order_type }}</td>
+                <td>{{ o.notes }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <h5>Procedures / Scans</h5>
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead><tr><th>Date</th><th>Procedure</th><th>Status</th></tr></thead>
+            <tbody>
+              {% for a in my_assignments %}
+              <tr>
+                <td>{{ a.created_at[:10] }}</td>
+                <td>{{ a.task_type }}</td>
+                <td>{{ a.status }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
+</div>
 {% endblock %}
