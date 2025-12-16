@@ -1,135 +1,173 @@
 {% extends "base.html" %}
+
 {% block content %}
-  <div class="card">
-    <h1 style="margin-top:0;">Doctor Dashboard</h1>
-    <p class="muted" style="margin-top:0;">
-      Create orders, assign patients to <b>available</b> nurses/radiologists, and view patient history.
-    </p>
+<div class="row dashboard-header">
+  <div class="col">
+    <h1>Doctor Dashboard</h1>
+    <p class="text-muted">Welcome, Dr. {{ doctor.name }} ({{ doctor.category }})</p>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Create Ticket Column -->
+  <div class="col-lg-4">
+    <div class="card mb-4 border-primary">
+      <div class="card-header bg-primary text-white">
+        <h4 class="mb-0">📝 Create Ticket</h4>
+      </div>
+      <div class="card-body">
+        <form action="{{ url_for('doctor_create_assignment') }}" method="POST">
+          <div class="mb-3">
+            <label class="form-label">Select Patient</label>
+            <select name="patient_id" class="form-select" required>
+              <option value="">-- Choose Patient --</option>
+              {% for p in patients %}
+              <option value="{{ p.id }}">{{ p.name }} (ID: {{ p.id }})</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Task Type</label>
+            <select name="task_type" class="form-select" required onchange="filterStaff(this.value)">
+              <option value="">-- Select Type --</option>
+              <option value="Scan">Radiology Scan (X-Ray, CT, MRI)</option>
+              <option value="Nursing">Nursing Care</option>
+              <option value="Lab">Lab Test</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Assign To (Radiologist/Nurse)</label>
+            <select name="assignee_staff_id" id="assignee_select" class="form-select" required>
+              <option value="">-- Select Staff --</option>
+              <optgroup label="Radiologists" class="staff-radiologist">
+                {% for r in radiologists %}
+                <option value="{{ r.id }}">{{ r.name }} ({{ r.category or 'General' }})</option>
+                {% endfor %}
+              </optgroup>
+              <optgroup label="Nurses" class="staff-nurse">
+                {% for n in nurses %}
+                <option value="{{ n.id }}">{{ n.name }} ({{ n.category or 'General' }})</option>
+                {% endfor %}
+              </optgroup>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Details / Notes</label>
+            <textarea name="notes" class="form-control" rows="3" placeholder="Enter clinical details..."></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary w-100">Create Ticket</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Create Clinical Order (Quick) -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5 class="mb-0">💊 Quick Clinical Note</h5>
+      </div>
+      <div class="card-body">
+        <form action="{{ url_for('doctor_create_order') }}" method="POST">
+          <div class="mb-2">
+            <select name="patient_id" class="form-select form-select-sm" required>
+              <option value="">-- Patient --</option>
+              {% for p in patients %}
+              <option value="{{ p.id }}">{{ p.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-2">
+            <input type="text" name="order_type" class="form-control form-select-sm" placeholder="Title (e.g. Diagnosis)" required>
+          </div>
+          <div class="mb-2">
+            <textarea name="notes" class="form-control form-control-sm" rows="2" placeholder="Notes..."></textarea>
+          </div>
+          <button type="submit" class="btn btn-secondary btn-sm w-100">Save Note</button>
+        </form>
+      </div>
+    </div>
   </div>
 
-  <div style="height:14px;"></div>
+  <!-- Recent Activity Column -->
+  <div class="col-lg-8">
+    <ul class="nav nav-tabs mb-3" id="docTabs" role="tablist">
+      <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tickets" type="button">Active Tickets</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#patients" type="button">All Patients</button>
+      </li>
+    </ul>
 
-  <div class="row">
-    <div class="card">
-      <h2 style="margin-top:0;">Create Order</h2>
-      <form method="post" action="{{ url_for('doctor_create_order') }}">
-        <label>Patient</label>
-        <select name="patient_id" required>
-          <option value="">-- choose --</option>
+    <div class="tab-content">
+      <!-- Tickets Tab -->
+      <div class="tab-pane fade show active" id="tickets">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>ID</th>
+                <th>Patient</th>
+                <th>Task</th>
+                <th>Assigned To</th>
+                <th>Status</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for a in recent_assignments %}
+              <tr>
+                <td>#{{ a.id }}</td>
+                <td><a href="{{ url_for('doctor_view_patient', patient_id=a.patient_id) }}" class="text-decoration-none">{{ a.patient_name }}</a></td>
+                <td>{{ a.task_type }}</td>
+                <td>
+                  {{ a.assignee_name }}
+                  <span class="badge bg-secondary rounded-pill status-badge">{{ a.assignee_role }}</span>
+                </td>
+                <td>
+                  <span class="badge bg-{{ 'success' if a.status == 'Completed' else 'warning' if a.status == 'In Progress' else 'info' }}">
+                    {{ a.status }}
+                  </span>
+                </td>
+                <td>{{ a.created_at[:10] }}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="6" class="text-center text-muted">No recent tickets</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Patients List Tab -->
+      <div class="tab-pane fade" id="patients">
+        <div class="list-group">
           {% for p in patients %}
-            <option value="{{ p.id }}">#{{ p.id }} - {{ p.name }}</option>
+          <a href="{{ url_for('doctor_view_patient', patient_id=p.id) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+            <div>
+              <h5 class="mb-1">{{ p.name }}</h5>
+              <small class="text-muted">ID: {{ p.id }} | DOB: {{ p.dob }}</small>
+            </div>
+            <span class="badge bg-primary rounded-pill">View History</span>
+          </a>
           {% endfor %}
-        </select>
-
-        <div style="height:10px;"></div>
-        <label>Order Type</label>
-        <input name="order_type" placeholder="ECG / Cardio / Physio / Lab / ..." required />
-
-        <div style="height:10px;"></div>
-        <label>Notes (optional)</label>
-        <textarea name="notes" placeholder="Extra details..."></textarea>
-
-        <div style="height:14px;"></div>
-        <button class="btn" type="submit">Create Order</button>
-      </form>
-    </div>
-
-    <div class="card">
-      <h2 style="margin-top:0;">Assign Patient to Staff</h2>
-      <p class="muted" style="margin-top:-6px;">Only <b>available</b> nurses/radiologists are shown.</p>
-      <form method="post" action="{{ url_for('doctor_create_assignment') }}">
-        <label>Patient</label>
-        <select name="patient_id" required>
-          <option value="">-- choose --</option>
-          {% for p in patients %}
-            <option value="{{ p.id }}">#{{ p.id }} - {{ p.name }}</option>
-          {% endfor %}
-        </select>
-
-        <div style="height:10px;"></div>
-        <label>Assignee (Nurse / Radiologist)</label>
-        <select name="assignee_staff_id" required>
-          <option value="">-- choose --</option>
-          <optgroup label="Nurses">
-            {% for n in nurses %}
-              <option value="{{ n.id }}">{{ n.name }}{% if n.category %} - {{ n.category }}{% endif %}</option>
-            {% endfor %}
-          </optgroup>
-          <optgroup label="Radiologists">
-            {% for r in radiologists %}
-              <option value="{{ r.id }}">{{ r.name }}{% if r.category %} - {{ r.category }}{% endif %}</option>
-            {% endfor %}
-          </optgroup>
-        </select>
-
-        <div style="height:10px;"></div>
-        <label>Task Type</label>
-        <input name="task_type" placeholder="CT Scan / X-Ray / ECG / Nursing Care / ..." required />
-
-        <div style="height:10px;"></div>
-        <label>Notes (optional)</label>
-        <textarea name="notes"></textarea>
-
-        <div style="height:14px;"></div>
-        <button class="btn" type="submit">Assign & Notify</button>
-      </form>
+        </div>
+      </div>
     </div>
   </div>
+</div>
 
-  <div style="height:14px;"></div>
-
-  <div class="row">
-    <div class="card">
-      <h2 style="margin-top:0;">Quick Patient History</h2>
-      <p class="muted" style="margin-top:-6px;">Click a patient to view full history (orders + assignments + reports).</p>
-      <table>
-        <thead><tr><th>ID</th><th>Name</th><th class="right">Open</th></tr></thead>
-        <tbody>
-          {% for p in patients %}
-          <tr>
-            <td>{{ p.id }}</td>
-            <td>{{ p.name }}</td>
-            <td class="right"><a class="btn secondary small" href="{{ url_for('doctor_view_patient', patient_id=p.id) }}">View</a></td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-
-    <div class="card">
-      <h2 style="margin-top:0;">Recent Activity</h2>
-      <h3 style="margin-bottom:6px;">Orders</h3>
-      <table>
-        <thead><tr><th>ID</th><th>Patient</th><th>Type</th><th>Status</th><th>Created</th></tr></thead>
-        <tbody>
-          {% for o in recent_orders %}
-          <tr>
-            <td>{{ o.id }}</td>
-            <td>{{ o.patient_name }}</td>
-            <td>{{ o.order_type }}</td>
-            <td>{{ o.status }}</td>
-            <td class="muted">{{ o.created_at }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-
-      <div style="height:10px;"></div>
-      <h3 style="margin-bottom:6px;">Assignments</h3>
-      <table>
-        <thead><tr><th>ID</th><th>Patient</th><th>Assignee</th><th>Task</th><th>Status</th></tr></thead>
-        <tbody>
-          {% for a in recent_assignments %}
-          <tr>
-            <td>{{ a.id }}</td>
-            <td>{{ a.patient_name }}</td>
-            <td>{{ a.assignee_name }} ({{ a.assignee_role }})</td>
-            <td>{{ a.task_type }}</td>
-            <td>{{ a.status }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
+<script>
+  // Simple script to auto-select staff type based on task type
+  function filterStaff(taskType) {
+    const select = document.getElementById('assignee_select');
+    // This is a basic UX enhancement, real filtering could be more robust
+    if (taskType === 'Scan') {
+      // Prioritize Radiologists visually?
+      // For now just letting the user pick, but we could hide options.
+    }
+  }
+</script>
 {% endblock %}

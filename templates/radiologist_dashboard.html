@@ -1,190 +1,115 @@
 {% extends "base.html" %}
+
 {% block content %}
-<style>
-    .dashboard-header {
-        background: linear-gradient(135deg, #1e3a8a, #3b82f6);
-        color: white;
-        padding: 32px;
-        border-radius: 12px;
-        margin-bottom: 24px;
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-    }
-    .dashboard-header h1 { margin: 0; font-size: 28px; }
-    .dashboard-header p { margin: 8px 0 0; opacity: 0.9; }
+<div class="row dashboard-header">
+  <div class="col">
+    <h1>Radiologist Dashboard</h1>
+    <p class="text-muted">Welcome, {{ me.name }} ({{ me.category }})</p>
+  </div>
+</div>
 
-    .status-badge {
-        display: inline-flex;
-        align-items: center;
-        padding: 4px 8px;
-        border-radius: 9999px;
-        font-size: 12px;
-        font-weight: 600;
-        background: rgba(255, 255, 255, 0.2);
-        backdrop-filter: blur(4px);
-        margin-top: 12px;
-    }
-    .status-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: #10b981;
-        margin-right: 6px;
-    }
-
-    .action-panel {
-        background: #f8fafc;
-        border: 1px border #e2e8f0;
-        padding: 16px;
-        border-radius: 8px;
-        margin-bottom: 16px;
-    }
-</style>
-
-  <div class="dashboard-header">
-    <h1>{{ title }}</h1>
-    <p>
-      Welcome, <b>{{ me.name }}</b>
-      {% if me.category %}&bull; {{ me.category }}{% endif %}
-    </p>
-    {% if me.is_available %}
-    <div class="status-badge">
-        <div class="status-dot"></div> Available for assignments
-    </div>
-    {% else %}
-    <div class="status-badge" style="background: rgba(239, 68, 68, 0.2);">
-        <div class="status-dot" style="background: #ef4444;"></div> Currently Unavailable
+<div class="row">
+  <div class="col-md-12">
+    <!-- Notifications -->
+    {% if notifications %}
+    <div class="card mb-4 border-info">
+      <div class="card-header bg-info text-white">🔔 New Notifications</div>
+      <div class="list-group list-group-flush">
+        {% for n in notifications %}
+          {% if not n.is_read %}
+          <div class="list-group-item d-flex justify-content-between align-items-center bg-light">
+            {{ n.message }}
+            <form action="{{ url_for('staff_mark_notification_read', notif_id=n.id) }}" method="POST">
+               <button class="btn btn-sm btn-outline-secondary">Mark Read</button>
+            </form>
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
     </div>
     {% endif %}
-  </div>
 
-  <div class="row">
-    <!-- Notifications Column -->
+    <!-- Tickets List -->
     <div class="card">
-      <div class="topbar" style="margin-bottom: 12px;">
-        <h2 style="margin:0;">🔔 Notifications</h2>
+      <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">📋 Assigned Tickets (Scans)</h4>
       </div>
-
-      {% if notifications %}
-      <div style="max-height: 400px; overflow-y: auto;">
-          <table style="width: 100%;">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>ID</th>
+                <th>Patient</th>
+                <th>Scan Type</th>
+                <th>Notes from Doctor</th>
+                <th>Requested By</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
             <tbody>
-              {% for n in notifications %}
-              <tr style="border-bottom: 1px solid #f3f4f6;">
-                <td style="padding: 12px 8px;">
-                    <div style="display:flex; justify-content:space-between; align-items:start;">
-                        <div>
-                            {{ n.message }}
-                            <div class="muted" style="font-size:11px; margin-top:4px;">{{ n.created_at }}</div>
+              {% for a in assignments %}
+              <tr>
+                <td>#{{ a.id }}</td>
+                <td>{{ a.patient_name }}</td>
+                <td><strong>{{ a.task_type }}</strong></td>
+                <td><small>{{ a.notes }}</small></td>
+                <td>{{ a.doctor_name }}</td>
+                <td>
+                   <form action="{{ url_for('staff_update_assignment_status', assignment_id=a.id) }}" method="POST" class="d-flex">
+                     <select name="status" class="form-select form-select-sm me-2" onchange="this.form.submit()"
+                             style="width: 130px;"
+                             {{ 'disabled' if a.status == 'Completed' }}>
+                       <option value="Assigned" {% if a.status=='Assigned' %}selected{% endif %}>Assigned</option>
+                       <option value="In Progress" {% if a.status=='In Progress' %}selected{% endif %}>In Progress</option>
+                       <option value="Completed" {% if a.status=='Completed' %}selected{% endif %}>Completed</option>
+                     </select>
+                   </form>
+                </td>
+                <td>
+                  <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#uploadModal{{ a.id }}">
+                    Upload Result
+                  </button>
+
+                  <!-- Upload Modal -->
+                  <div class="modal fade" id="uploadModal{{ a.id }}" tabindex="-1">
+                    <div class="modal-dialog">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h5 class="modal-title">Upload Scan for {{ a.patient_name }}</h5>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
-                        {% if not n.is_read %}
-                        <form method="post" action="{{ url_for('staff_mark_notification_read', notif_id=n.id) }}">
-                            <button class="btn small pill" style="background:#dbeafe; color:#1e40af; border:none;" type="submit">Mark Read</button>
-                        </form>
-                        {% endif %}
+                        <div class="modal-body">
+                          <form action="{{ url_for('staff_create_report') }}" method="POST" enctype="multipart/form-data">
+                            <input type="hidden" name="patient_id" value="{{ a.patient_id }}">
+                            <input type="hidden" name="report_type" value="Scan Result">
+
+                            <div class="mb-3">
+                              <label class="form-label">Scan Image</label>
+                              <input type="file" name="image_file" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                              <label class="form-label">Report / Findings</label>
+                              <textarea name="report_text" class="form-control" rows="4" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-success w-100">Submit Report</button>
+                          </form>
+                        </div>
+                      </div>
                     </div>
+                  </div>
+
                 </td>
               </tr>
+              {% else %}
+              <tr><td colspan="7" class="text-center py-4">No active tickets.</td></tr>
               {% endfor %}
             </tbody>
           </table>
-      </div>
-      {% else %}
-        <div class="muted" style="text-align:center; padding: 20px;">No new notifications</div>
-      {% endif %}
-    </div>
-
-    <!-- Upload Report Column -->
-    <div class="card">
-      <h2 style="margin-top:0;">📤 Upload Results</h2>
-      <div class="action-panel">
-          <form method="post" action="{{ url_for('staff_create_report') }}" enctype="multipart/form-data">
-            <label>Select Patient</label>
-            <!-- Improved: Could be a dynamic search, but using ID for now as per schema -->
-            <input name="patient_id" type="number" placeholder="Enter Patient ID" required />
-
-            <div style="height:12px;"></div>
-
-            <label>Report Type</label>
-            <select name="report_type">
-                <option value="Scan Result" selected>Scan Result</option>
-                <option value="Lab Report">Lab Report</option>
-                <option value="Clinical Note">Clinical Note</option>
-            </select>
-
-            <div style="height:12px;"></div>
-
-            <label>Findings / Notes</label>
-            <textarea name="report_text" placeholder="Enter detailed findings here..." rows="3"></textarea>
-
-            <div style="height:12px;"></div>
-
-            <label>Attach File</label>
-            <div style="border: 2px dashed #cbd5e1; padding: 16px; text-align: center; border-radius: 8px; cursor: pointer; background: white;" onclick="document.getElementById('fileInput').click()">
-                <span class="muted">Click to upload scan/image</span>
-                <input type="file" id="fileInput" name="image_file" style="display:none;" onchange="document.getElementById('fileName').innerText = this.files[0].name" />
-                <div id="fileName" style="font-size: 12px; margin-top: 4px; color: #3b82f6;"></div>
-            </div>
-
-            <div style="height:16px;"></div>
-            <button class="btn" type="submit" style="width:100%;">Submit Report</button>
-          </form>
+        </div>
       </div>
     </div>
   </div>
-
-  <div style="height:16px;"></div>
-
-  <!-- Assignments Table -->
-  <div class="card">
-    <h2 style="margin-top:0;">📋 My Assignments</h2>
-    <div style="overflow-x: auto;">
-        <table>
-          <thead>
-              <tr>
-                  <th>ID</th>
-                  <th>Patient</th>
-                  <th>Requesting Doctor</th>
-                  <th>Task Details</th>
-                  <th>Status</th>
-                  <th class="right">Update Status</th>
-              </tr>
-          </thead>
-          <tbody>
-            {% for a in assignments %}
-            <tr>
-              <td>#{{ a.id }}</td>
-              <td>
-                  <div style="font-weight:600;">{{ a.patient_name }}</div>
-                  <div class="muted" style="font-size:12px;">ID: {{ a.patient_id }}</div>
-              </td>
-              <td>{{ a.doctor_name }}</td>
-              <td>
-                  <div style="color: #1e40af; font-weight: 500;">{{ a.task_type }}</div>
-                  <div class="muted" style="font-size:12px;">{{ a.notes or "No notes" }}</div>
-              </td>
-              <td>
-                  <span class="pill {% if a.status == 'Completed' %}ok{% elif a.status == 'In Progress' %}warn{% endif %}">
-                      {{ a.status }}
-                  </span>
-              </td>
-              <td class="right">
-                <form method="post" action="{{ url_for('staff_update_assignment_status', assignment_id=a.id) }}" style="display:flex; gap:8px; justify-content:flex-end; align-items:center;">
-                  <select name="status" style="width: auto; padding: 6px; font-size: 13px;">
-                    <option value="Assigned" {% if a.status=='Assigned' %}selected{% endif %}>Assigned</option>
-                    <option value="In Progress" {% if a.status=='In Progress' %}selected{% endif %}>In Progress</option>
-                    <option value="Completed" {% if a.status=='Completed' %}selected{% endif %}>Completed</option>
-                  </select>
-                  <button class="btn secondary small" type="submit">Update</button>
-                </form>
-              </td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="6" style="text-align:center; padding: 20px;" class="muted">No active assignments found.</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-    </div>
-  </div>
+</div>
 {% endblock %}

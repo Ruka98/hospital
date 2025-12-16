@@ -22,12 +22,22 @@ def hash_pw(pw: str) -> str:
 
 def require_role(role: str):
     if session.get("role") != role:
-        return redirect(url_for(f"{role}_login"))
+        # If user is staff but logged in, they might have access if admin
+        if session.get("role") == "admin":
+             return None
+        return redirect(url_for("home"))
     return None
 
 def require_staff_role(role: str):
     if session.get("role") != role:
-        return redirect(url_for(f"{role}_login"))
+        if session.get("role") == "admin":
+            return None # Admins can access staff routes
+        return redirect(url_for("home"))
+    return None
+
+def require_any_staff():
+    if not session.get("role") or session.get("role") == "patient":
+        return redirect(url_for("staff_login"))
     return None
 
 app = Flask(__name__)
@@ -59,23 +69,29 @@ def logout():
     session.clear()
     return redirect(url_for("home"))
 
-@app.route("/admin/login", methods=["GET","POST"])
-def admin_login():
+@app.route("/login/staff", methods=["GET","POST"])
+def staff_login():
     if request.method == "POST":
         username = request.form.get("username","").strip()
         password = request.form.get("password","")
         conn = db()
-        row = conn.execute("SELECT id, username, password_hash FROM admins WHERE username=?", (username,)).fetchone()
+        # Query generic staff table
+        row = conn.execute(
+            "SELECT id, username, password_hash, role FROM staff WHERE username=?",
+            (username,),
+        ).fetchone()
         conn.close()
+
         if row and row["password_hash"] == hash_pw(password):
-            session["role"] = "admin"
+            session["role"] = row["role"]
             session["user_id"] = row["id"]
             session["username"] = row["username"]
-            return redirect(url_for("admin_dashboard"))
-        flash("Invalid admin credentials")
-    return render_template("login.html", title="Admin Login", role="admin")
+            return redirect(url_for(f"{row['role']}_dashboard"))
 
-@app.route("/patient/login", methods=["GET","POST"])
+        flash("Invalid staff credentials")
+    return render_template("login.html", title="Staff Login", role="staff")
+
+@app.route("/login/patient", methods=["GET","POST"])
 def patient_login():
     if request.method == "POST":
         username = request.form.get("username","").strip()
@@ -90,36 +106,6 @@ def patient_login():
             return redirect(url_for("patient_dashboard"))
         flash("Invalid patient credentials")
     return render_template("login.html", title="Patient Login", role="patient")
-
-def _handle_staff_login(role: str, title: str):
-    if request.method == "POST":
-        username = request.form.get("username","").strip()
-        password = request.form.get("password","")
-        conn = db()
-        row = conn.execute(
-            "SELECT id, username, password_hash FROM staff WHERE username=? AND role=?",
-            (username, role),
-        ).fetchone()
-        conn.close()
-        if row and row["password_hash"] == hash_pw(password):
-            session["role"] = role
-            session["user_id"] = row["id"]
-            session["username"] = row["username"]
-            return redirect(url_for(f"{role}_dashboard"))
-        flash(f"Invalid {role} credentials")
-    return render_template("login.html", title=title, role=role)
-
-@app.route("/doctor/login", methods=["GET","POST"])
-def doctor_login():
-    return _handle_staff_login("doctor", "Doctor Login")
-
-@app.route("/nurse/login", methods=["GET","POST"])
-def nurse_login():
-    return _handle_staff_login("nurse", "Nurse Login")
-
-@app.route("/radiologist/login", methods=["GET","POST"])
-def radiologist_login():
-    return _handle_staff_login("radiologist", "Radiologist Login")
 
 # ---------------- Admin ----------------
 @app.route("/admin")
@@ -167,8 +153,10 @@ def admin_create_staff():
     password = request.form.get("password","")
     phone = request.form.get("phone","").strip()
     is_available = 1 if request.form.get("is_available") == "on" else 0
-    if role not in ("doctor","nurse","radiologist"):
-        flash("Role must be doctor, nurse, or radiologist")
+
+    # Updated to allow admin creation
+    if role not in ("admin", "doctor","nurse","radiologist"):
+        flash("Role must be admin, doctor, nurse, or radiologist")
         return redirect(url_for("admin_dashboard"))
     if not (name and username and password):
         flash("Name, username, password are required")
@@ -347,7 +335,7 @@ def doctor_create_assignment():
 
     conn.commit()
     conn.close()
-    flash("Assignment created (assignee notified)")
+    flash("Ticket created (assignee notified)")
     return redirect(url_for("doctor_dashboard"))
 
 @app.get("/doctor/patient/<int:patient_id>")
@@ -469,7 +457,7 @@ def staff_update_assignment_status(assignment_id):
     )
     conn.commit()
     conn.close()
-    flash("Assignment status updated")
+    flash("Ticket status updated")
     return redirect(url_for(f"{role}_dashboard"))
 
 def _save_upload(file_storage):
