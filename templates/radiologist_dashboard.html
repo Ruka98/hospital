@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <h1 style="margin-top:0;">{{ title }}</h1>
+    <p class="muted" style="margin-top:0;">
+      Hello <b>{{ me.name }}</b>{% if me.category %} ({{ me.category }}){% endif %}. You will see assignments only when you are marked as <b>available</b> by admin.
+    </p>
+  </div>
+
+  <div style="height:14px;"></div>
+
+  <div class="row">
+    <div class="card">
+      <h2 style="margin-top:0;">Notifications</h2>
+      <table>
+        <thead><tr><th>Message</th><th>Status</th><th class="right">Action</th></tr></thead>
+        <tbody>
+          {% for n in notifications %}
+          <tr>
+            <td>{{ n.message }}<div class="muted" style="font-size:12px;">{{ n.created_at }}</div></td>
+            <td>
+              {% if n.is_read %}
+                <span class="pill ok">Read</span>
+              {% else %}
+                <span class="pill warn">New</span>
+              {% endif %}
+            </td>
+            <td class="right">
+              {% if not n.is_read %}
+              <form method="post" action="{{ url_for('staff_mark_notification_read', notif_id=n.id) }}" style="display:inline;">
+                <button class="btn secondary small" type="submit">Mark read</button>
+              </form>
+              {% else %}
+                <span class="muted">-</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0;">Add Report / Scan</h2>
+      <form method="post" action="{{ url_for('staff_create_report') }}" enctype="multipart/form-data">
+        <label>Patient ID</label>
+        <input name="patient_id" placeholder="e.g., 1" required />
+
+        <div style="height:10px;"></div>
+        <label>Report Type</label>
+        <input name="report_type" placeholder="Report / Scan Result / Note" />
+
+        <div style="height:10px;"></div>
+        <label>Report Text</label>
+        <textarea name="report_text" placeholder="Write findings..."></textarea>
+
+        <div style="height:10px;"></div>
+        <label>Upload file (optional)</label>
+        <input type="file" name="image_file" />
+
+        <div style="height:14px;"></div>
+        <button class="btn" type="submit">Add to Patient</button>
+      </form>
+      <p class="muted" style="margin-bottom:0;">Allowed: PNG/JPG/WEBP/PDF</p>
+    </div>
+  </div>
+
+  <div style="height:14px;"></div>
+
+  <div class="card">
+    <h2 style="margin-top:0;">My Assignments</h2>
+    <table>
+      <thead><tr><th>ID</th><th>Patient</th><th>Doctor</th><th>Task</th><th>Status</th><th class="right">Update</th></tr></thead>
+      <tbody>
+        {% for a in assignments %}
+        <tr>
+          <td>{{ a.id }}</td>
+          <td>#{{ a.patient_id }} - {{ a.patient_name }}</td>
+          <td>{{ a.doctor_name }}</td>
+          <td>{{ a.task_type }}<div class="muted" style="font-size:12px;">{{ a.notes or "" }}</div></td>
+          <td>{{ a.status }}</td>
+          <td class="right">
+            <form method="post" action="{{ url_for('staff_update_assignment_status', assignment_id=a.id) }}" style="display:flex;gap:8px;justify-content:flex-end;">
+              <select name="status" style="width:170px;">
+                <option value="Assigned" {% if a.status=='Assigned' %}selected{% endif %}>Assigned</option>
+                <option value="In Progress" {% if a.status=='In Progress' %}selected{% endif %}>In Progress</option>
+                <option value="Completed" {% if a.status=='Completed' %}selected{% endif %}>Completed</option>
+              </select>
+              <button class="btn secondary small" type="submit">Save</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

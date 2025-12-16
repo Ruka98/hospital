@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <h1 style="margin-top:0;">Doctor Dashboard</h1>
+    <p class="muted" style="margin-top:0;">
+      Create orders, assign patients to <b>available</b> nurses/radiologists, and view patient history.
+    </p>
+  </div>
+
+  <div style="height:14px;"></div>
+
+  <div class="row">
+    <div class="card">
+      <h2 style="margin-top:0;">Create Order</h2>
+      <form method="post" action="{{ url_for('doctor_create_order') }}">
+        <label>Patient</label>
+        <select name="patient_id" required>
+          <option value="">-- choose --</option>
+          {% for p in patients %}
+            <option value="{{ p.id }}">#{{ p.id }} - {{ p.name }}</option>
+          {% endfor %}
+        </select>
+
+        <div style="height:10px;"></div>
+        <label>Order Type</label>
+        <input name="order_type" placeholder="ECG / Cardio / Physio / Lab / ..." required />
+
+        <div style="height:10px;"></div>
+        <label>Notes (optional)</label>
+        <textarea name="notes" placeholder="Extra details..."></textarea>
+
+        <div style="height:14px;"></div>
+        <button class="btn" type="submit">Create Order</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0;">Assign Patient to Staff</h2>
+      <p class="muted" style="margin-top:-6px;">Only <b>available</b> nurses/radiologists are shown.</p>
+      <form method="post" action="{{ url_for('doctor_create_assignment') }}">
+        <label>Patient</label>
+        <select name="patient_id" required>
+          <option value="">-- choose --</option>
+          {% for p in patients %}
+            <option value="{{ p.id }}">#{{ p.id }} - {{ p.name }}</option>
+          {% endfor %}
+        </select>
+
+        <div style="height:10px;"></div>
+        <label>Assignee (Nurse / Radiologist)</label>
+        <select name="assignee_staff_id" required>
+          <option value="">-- choose --</option>
+          <optgroup label="Nurses">
+            {% for n in nurses %}
+              <option value="{{ n.id }}">{{ n.name }}{% if n.category %} - {{ n.category }}{% endif %}</option>
+            {% endfor %}
+          </optgroup>
+          <optgroup label="Radiologists">
+            {% for r in radiologists %}
+              <option value="{{ r.id }}">{{ r.name }}{% if r.category %} - {{ r.category }}{% endif %}</option>
+            {% endfor %}
+          </optgroup>
+        </select>
+
+        <div style="height:10px;"></div>
+        <label>Task Type</label>
+        <input name="task_type" placeholder="CT Scan / X-Ray / ECG / Nursing Care / ..." required />
+
+        <div style="height:10px;"></div>
+        <label>Notes (optional)</label>
+        <textarea name="notes"></textarea>
+
+        <div style="height:14px;"></div>
+        <button class="btn" type="submit">Assign & Notify</button>
+      </form>
+    </div>
+  </div>
+
+  <div style="height:14px;"></div>
+
+  <div class="row">
+    <div class="card">
+      <h2 style="margin-top:0;">Quick Patient History</h2>
+      <p class="muted" style="margin-top:-6px;">Click a patient to view full history (orders + assignments + reports).</p>
+      <table>
+        <thead><tr><th>ID</th><th>Name</th><th class="right">Open</th></tr></thead>
+        <tbody>
+          {% for p in patients %}
+          <tr>
+            <td>{{ p.id }}</td>
+            <td>{{ p.name }}</td>
+            <td class="right"><a class="btn secondary small" href="{{ url_for('doctor_view_patient', patient_id=p.id) }}">View</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0;">Recent Activity</h2>
+      <h3 style="margin-bottom:6px;">Orders</h3>
+      <table>
+        <thead><tr><th>ID</th><th>Patient</th><th>Type</th><th>Status</th><th>Created</th></tr></thead>
+        <tbody>
+          {% for o in recent_orders %}
+          <tr>
+            <td>{{ o.id }}</td>
+            <td>{{ o.patient_name }}</td>
+            <td>{{ o.order_type }}</td>
+            <td>{{ o.status }}</td>
+            <td class="muted">{{ o.created_at }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div style="height:10px;"></div>
+      <h3 style="margin-bottom:6px;">Assignments</h3>
+      <table>
+        <thead><tr><th>ID</th><th>Patient</th><th>Assignee</th><th>Task</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for a in recent_assignments %}
+          <tr>
+            <td>{{ a.id }}</td>
+            <td>{{ a.patient_name }}</td>
+            <td>{{ a.assignee_name }} ({{ a.assignee_role }})</td>
+            <td>{{ a.task_type }}</td>
+            <td>{{ a.status }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

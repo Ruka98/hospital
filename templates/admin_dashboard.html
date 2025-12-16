@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="row">
+    <div class="card">
+      <h2 style="margin-top:0;">Create Staff</h2>
+      <p class="muted">Admins can add doctors, nurses, and radiologists (with category/specialty).</p>
+      <form method="post" action="{{ url_for('admin_create_staff') }}">
+        <div class="row">
+          <div>
+            <label>Name</label>
+            <input name="name" required />
+          </div>
+          <div>
+            <label>Role</label>
+            <select name="role" required>
+              <option value="doctor">doctor</option>
+              <option value="nurse">nurse</option>
+              <option value="radiologist">radiologist</option>
+            </select>
+          </div>
+        </div>
+        <div style="height:10px;"></div>
+        <label>Category / Specialty (optional)</label>
+        <input name="category" placeholder="e.g., Cardiologist / ICU Nurse / CT Radiology" />
+
+        <div style="height:10px;"></div>
+        <div class="row">
+          <div>
+            <label>Username</label>
+            <input name="username" required />
+          </div>
+          <div>
+            <label>Password</label>
+            <input name="password" required />
+          </div>
+        </div>
+
+        <div style="height:10px;"></div>
+        <div class="row">
+          <div>
+            <label>Phone (optional)</label>
+            <input name="phone" />
+          </div>
+          <div>
+            <label>Available now?</label>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+              <input type="checkbox" name="is_available" checked style="width:auto;" />
+              <span class="muted">Doctors can assign only to available staff</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="height:14px;"></div>
+        <button class="btn" type="submit">Create Staff</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0;">Create Patient</h2>
+      <p class="muted">Patients can login using admin-created credentials.</p>
+      <form method="post" action="{{ url_for('admin_create_patient') }}">
+        <label>Name</label>
+        <input name="name" required />
+
+        <div style="height:10px;"></div>
+        <div class="row">
+          <div>
+            <label>Username</label>
+            <input name="username" required />
+          </div>
+          <div>
+            <label>Password</label>
+            <input name="password" required />
+          </div>
+        </div>
+
+        <div style="height:10px;"></div>
+        <div class="row">
+          <div>
+            <label>Phone (optional)</label>
+            <input name="phone" />
+          </div>
+          <div>
+            <label>DOB (optional)</label>
+            <input name="dob" placeholder="YYYY-MM-DD" />
+          </div>
+        </div>
+
+        <div style="height:10px;"></div>
+        <label>Gender (optional)</label>
+        <input name="gender" placeholder="Male/Female/Other" />
+
+        <div style="height:14px;"></div>
+        <button class="btn" type="submit">Create Patient</button>
+      </form>
+    </div>
+  </div>
+
+  <div style="height:16px;"></div>
+
+  <div class="row">
+    <div class="card">
+      <h2 style="margin-top:0;">Staff</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Name</th><th>Role</th><th>Category</th><th>Username</th><th>Available</th><th class="right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in staff %}
+          <tr>
+            <td>{{ s.id }}</td>
+            <td>{{ s.name }}</td>
+            <td><span class="pill">{{ s.role }}</span></td>
+            <td>{{ s.category or "" }}</td>
+            <td>{{ s.username }}</td>
+            <td>
+              {% if s.is_available %}
+                <span class="pill ok">Yes</span>
+              {% else %}
+                <span class="pill warn">No</span>
+              {% endif %}
+            </td>
+            <td class="right">
+              <form method="post" action="{{ url_for('admin_toggle_availability', staff_id=s.id) }}" style="display:inline;">
+                <button class="btn secondary small" type="submit">Toggle</button>
+              </form>
+              <form method="post" action="{{ url_for('admin_delete_staff', staff_id=s.id) }}" style="display:inline;">
+                <button class="btn secondary small" type="submit" onclick="return confirm('Delete staff?');">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0;">Patients</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Name</th><th>Username</th><th>Phone</th><th class="right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in patients %}
+          <tr>
+            <td>{{ p.id }}</td>
+            <td>{{ p.name }}</td>
+            <td>{{ p.username }}</td>
+            <td>{{ p.phone or "" }}</td>
+            <td class="right">
+              <form method="post" action="{{ url_for('admin_delete_patient', patient_id=p.id) }}" style="display:inline;">
+                <button class="btn secondary small" type="submit" onclick="return confirm('Delete patient?');">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="height:16px;"></div>
+
+  <div class="card">
+    <h2 style="margin-top:0;">Recent Assignments</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th><th>Patient</th><th>Doctor</th><th>Assignee</th><th>Task</th><th>Status</th><th>Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in recent_assignments %}
+        <tr>
+          <td>{{ a.id }}</td>
+          <td>{{ a.patient_name }}</td>
+          <td>{{ a.doctor_name }}</td>
+          <td>{{ a.assignee_name }} ({{ a.assignee_role }})</td>
+          <td>{{ a.task_type }}</td>
+          <td>{{ a.status }}</td>
+          <td class="muted">{{ a.created_at }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

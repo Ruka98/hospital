@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card" style="max-width:820px;margin:30px auto;">
+    <h1 style="margin:0 0 8px 0;">Login</h1>
+    <p class="muted" style="margin-top:0;">Choose your account type.</p>
+
+    <div class="grid3" style="margin-top:14px;">
+      <a class="card" style="text-decoration:none;" href="{{ url_for('admin_login') }}">
+        <h2 style="margin:0 0 6px 0;">Admin</h2>
+        <p class="muted" style="margin:0;">Add staff + patients, manage availability</p>
+      </a>
+      <a class="card" style="text-decoration:none;" href="{{ url_for('doctor_login') }}">
+        <h2 style="margin:0 0 6px 0;">Doctor</h2>
+        <p class="muted" style="margin:0;">Create orders, assign nurses/radiologists, view history</p>
+      </a>
+      <a class="card" style="text-decoration:none;" href="{{ url_for('patient_login') }}">
+        <h2 style="margin:0 0 6px 0;">Patient</h2>
+        <p class="muted" style="margin:0;">View clinics, orders, reports, scans</p>
+      </a>
+      <a class="card" style="text-decoration:none;" href="{{ url_for('nurse_login') }}">
+        <h2 style="margin:0 0 6px 0;">Nurse</h2>
+        <p class="muted" style="margin:0;">See assignments, add reports</p>
+      </a>
+      <a class="card" style="text-decoration:none;" href="{{ url_for('radiologist_login') }}">
+        <h2 style="margin:0 0 6px 0;">Radiologist</h2>
+        <p class="muted" style="margin:0;">Get notified, upload scan results</p>
+      </a>
+    </div>
+
+    <p class="muted" style="margin-top:14px;">Default admin: <b>admin / admin123</b> (after running <code>python init_db.py</code>)</p>
+  </div>
+{% endblock %}

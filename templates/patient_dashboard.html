@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <h1 style="margin-top:0;">Patient Dashboard</h1>
+    <p class="muted" style="margin-top:0;">
+      Welcome <b>{{ patient.name }}</b>. Here is your history: orders, assignments, reports and scans.
+    </p>
+  </div>
+
+  <div style="height:14px;"></div>
+
+  <div class="card">
+    <h2 style="margin-top:0;">Orders</h2>
+    <table>
+      <thead><tr><th>ID</th><th>Doctor</th><th>Type</th><th>Status</th><th>Notes</th><th>Created</th></tr></thead>
+      <tbody>
+        {% for o in my_orders %}
+        <tr>
+          <td>{{ o.id }}</td>
+          <td>{{ o.doctor_name }}{% if o.doctor_specialty %} ({{ o.doctor_specialty }}){% endif %}</td>
+          <td>{{ o.order_type }}</td>
+          <td>{{ o.status }}</td>
+          <td>{{ o.notes or "" }}</td>
+          <td class="muted">{{ o.created_at }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div style="height:14px;"></div>
+
+  <div class="card">
+    <h2 style="margin-top:0;">Assignments (Nurses / Radiologists)</h2>
+    <table>
+      <thead><tr><th>ID</th><th>Doctor</th><th>Assignee</th><th>Task</th><th>Status</th><th>Notes</th><th>Created</th></tr></thead>
+      <tbody>
+        {% for a in my_assignments %}
+        <tr>
+          <td>{{ a.id }}</td>
+          <td>{{ a.doctor_name }}</td>
+          <td>{{ a.assignee_name }} ({{ a.assignee_role }})</td>
+          <td>{{ a.task_type }}</td>
+          <td>{{ a.status }}</td>
+          <td>{{ a.notes or "" }}</td>
+          <td class="muted">{{ a.created_at }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div style="height:14px;"></div>
+
+  <div class="card">
+    <h2 style="margin-top:0;">Reports & Scans</h2>
+    <table>
+      <thead><tr><th>ID</th><th>Added By</th><th>Type</th><th>Text</th><th>File</th><th>Created</th></tr></thead>
+      <tbody>
+        {% for r in my_reports %}
+        <tr>
+          <td>{{ r.id }}</td>
+          <td>{{ r.staff_name }} ({{ r.staff_role }})</td>
+          <td>{{ r.report_type }}</td>
+          <td>{{ r.report_text or "" }}</td>
+          <td>
+            {% if r.image_filename %}
+              <a href="{{ url_for('uploads', filename=r.image_filename) }}" target="_blank">Open</a>
+            {% else %}
+              <span class="muted">-</span>
+            {% endif %}
+          </td>
+          <td class="muted">{{ r.created_at }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}
