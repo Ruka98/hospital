@@ -8,30 +8,42 @@
         <div class="row">
           <div>
             <label>Name</label>
-            <input name="name" required />
+            <input name="name" required placeholder="Full Name" />
           </div>
           <div>
             <label>Role</label>
-            <select name="role" required>
-              <option value="doctor">doctor</option>
-              <option value="nurse">nurse</option>
-              <option value="radiologist">radiologist</option>
+            <select name="role" id="roleSelect" required onchange="updateCategories()">
+              <option value="" disabled selected>Select Role</option>
+              <option value="doctor">Doctor</option>
+              <option value="nurse">Nurse</option>
+              <option value="radiologist">Radiologist</option>
             </select>
           </div>
         </div>
+
         <div style="height:10px;"></div>
-        <label>Category / Specialty (optional)</label>
-        <input name="category" placeholder="e.g., Cardiologist / ICU Nurse / CT Radiology" />
+
+        <label>Category / Specialty</label>
+        <div class="row" style="gap: 8px; grid-template-columns: 1fr 1fr;">
+            <select id="categorySelect" name="category_select" onchange="checkOther(this)">
+                <option value="" disabled selected>Select Category</option>
+                <!-- Options populated by JS -->
+                <option value="Other">Other (Type below)</option>
+            </select>
+            <input id="otherCategoryInput" name="category_other" placeholder="Type Category..." style="display:none;" />
+        </div>
+        <!-- Hidden input to store the final category value sent to server -->
+        <input type="hidden" name="category" id="finalCategory" />
 
         <div style="height:10px;"></div>
         <div class="row">
           <div>
             <label>Username</label>
-            <input name="username" required />
+            <input name="username" required placeholder="Login Username" />
           </div>
           <div>
             <label>Password</label>
-            <input name="password" required />
+            <input name="password" required placeholder="Login Password" />
           </div>
         </div>
 
@@ -39,7 +51,7 @@
         <div class="row">
           <div>
             <label>Phone (optional)</label>
-            <input name="phone" />
+            <input name="phone" placeholder="Contact Number" />
           </div>
           <div>
             <label>Available now?</label>
@@ -60,17 +72,17 @@
       <p class="muted">Patients can login using admin-created credentials.</p>
       <form method="post" action="{{ url_for('admin_create_patient') }}">
         <label>Name</label>
-        <input name="name" required />
+        <input name="name" required placeholder="Patient Full Name" />
 
         <div style="height:10px;"></div>
         <div class="row">
           <div>
             <label>Username</label>
-            <input name="username" required />
+            <input name="username" required placeholder="Login Username" />
           </div>
           <div>
             <label>Password</label>
-            <input name="password" required />
+            <input name="password" required placeholder="Login Password" />
           </div>
         </div>
 
@@ -78,7 +90,7 @@
         <div class="row">
           <div>
             <label>Phone (optional)</label>
-            <input name="phone" />
+            <input name="phone" placeholder="Contact Number" />
           </div>
           <div>
             <label>DOB (optional)</label>
@@ -88,7 +100,12 @@
 
         <div style="height:10px;"></div>
         <label>Gender (optional)</label>
-        <input name="gender" placeholder="Male/Female/Other" />
+        <select name="gender">
+            <option value="" disabled selected>Select Gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+        </select>
 
         <div style="height:14px;"></div>
         <button class="btn" type="submit">Create Patient</button>
@@ -100,7 +117,7 @@
 
   <div class="row">
     <div class="card">
-      <h2 style="margin-top:0;">Staff</h2>
+      <h2 style="margin-top:0;">Staff List</h2>
       <table>
         <thead>
           <tr>
@@ -112,8 +129,8 @@
           <tr>
             <td>{{ s.id }}</td>
             <td>{{ s.name }}</td>
-            <td><span class="pill">{{ s.role }}</span></td>
-            <td>{{ s.category or "" }}</td>
+            <td><span class="pill">{{ s.role|capitalize }}</span></td>
+            <td>{{ s.category or "-" }}</td>
             <td>{{ s.username }}</td>
             <td>
               {% if s.is_available %}
@@ -137,7 +154,7 @@
     </div>
 
     <div class="card">
-      <h2 style="margin-top:0;">Patients</h2>
+      <h2 style="margin-top:0;">Patients List</h2>
       <table>
         <thead>
           <tr>
@@ -150,7 +167,7 @@
             <td>{{ p.id }}</td>
             <td>{{ p.name }}</td>
             <td>{{ p.username }}</td>
-            <td>{{ p.phone or "" }}</td>
+            <td>{{ p.phone or "-" }}</td>
             <td class="right">
               <form method="post" action="{{ url_for('admin_delete_patient', patient_id=p.id) }}" style="display:inline;">
                 <button class="btn secondary small" type="submit" onclick="return confirm('Delete patient?');">Delete</button>
@@ -179,13 +196,75 @@
           <td>{{ a.id }}</td>
           <td>{{ a.patient_name }}</td>
           <td>{{ a.doctor_name }}</td>
-          <td>{{ a.assignee_name }} ({{ a.assignee_role }})</td>
+          <td>{{ a.assignee_name }} ({{ a.assignee_role|capitalize }})</td>
           <td>{{ a.task_type }}</td>
-          <td>{{ a.status }}</td>
+          <td>
+            <span class="pill {% if a.status == 'Completed' %}ok{% elif a.status == 'In Progress' %}warn{% endif %}">
+              {{ a.status }}
+            </span>
+          </td>
           <td class="muted">{{ a.created_at }}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
+
+<script>
+    const categories = {
+        'doctor': ['General Practitioner', 'Cardiologist', 'Neurologist', 'Pediatrician', 'Surgeon', 'Dermatologist'],
+        'nurse': ['General Nurse', 'ICU Nurse', 'Pediatric Nurse', 'Surgical Nurse', 'Emergency Nurse'],
+        'radiologist': ['X-Ray Technician', 'MRI Technician', 'CT Scan Specialist', 'Ultrasound Technician']
+    };
+
+    function updateCategories() {
+        const role = document.getElementById('roleSelect').value;
+        const categorySelect = document.getElementById('categorySelect');
+        const otherInput = document.getElementById('otherCategoryInput');
+
+        categorySelect.innerHTML = '<option value="" disabled selected>Select Category</option>';
+
+        if (categories[role]) {
+            categories[role].forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                categorySelect.appendChild(option);
+            });
+        }
+
+        const otherOption = document.createElement('option');
+        otherOption.value = 'Other';
+        otherOption.textContent = 'Other (Type below)';
+        categorySelect.appendChild(otherOption);
+
+        // Reset other input
+        otherInput.style.display = 'none';
+        otherInput.value = '';
+    }
+
+    function checkOther(select) {
+        const otherInput = document.getElementById('otherCategoryInput');
+        if (select.value === 'Other') {
+            otherInput.style.display = 'block';
+            otherInput.required = true;
+        } else {
+            otherInput.style.display = 'none';
+            otherInput.required = false;
+        }
+    }
+
+    // On form submit, populate the hidden input
+    document.querySelector('form[action="{{ url_for("admin_create_staff") }}"]').addEventListener('submit', function(e) {
+        const select = document.getElementById('categorySelect');
+        const otherInput = document.getElementById('otherCategoryInput');
+        const finalInput = document.getElementById('finalCategory');
+
+        if (select.value === 'Other') {
+            finalInput.value = otherInput.value;
+        } else {
+            finalInput.value = select.value;
+        }
+    });
+</script>
 {% endblock %}

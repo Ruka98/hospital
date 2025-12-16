@@ -1,16 +1,82 @@
 {% extends "base.html" %}
 {% block content %}
-  <div class="card" style="max-width:520px;margin:40px auto;">
-    <h1 style="margin:0 0 8px 0;">{{ title }}</h1>
+<style>
+    .auth-card {
+        max-width: 400px;
+        margin: 60px auto;
+        background: white;
+        padding: 40px;
+        border-radius: 16px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        text-align: center;
+    }
+    .auth-title {
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: #111827;
+    }
+    .auth-subtitle {
+        color: #6b7280;
+        margin-bottom: 24px;
+        font-size: 14px;
+    }
+    .form-group {
+        margin-bottom: 16px;
+        text-align: left;
+    }
+    .form-group label {
+        display: block;
+        font-size: 14px;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 6px;
+    }
+    .auth-btn {
+        width: 100%;
+        padding: 12px;
+        background: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background 0.2s;
+    }
+    .auth-btn:hover {
+        background: #1d4ed8;
+    }
+    .back-link {
+        display: block;
+        margin-top: 16px;
+        color: #6b7280;
+        text-decoration: none;
+        font-size: 14px;
+    }
+    .back-link:hover {
+        color: #111827;
+    }
+</style>
+
+<div class="auth-card">
+    <h1 class="auth-title">{{ title }}</h1>
+    <p class="auth-subtitle">Please enter your credentials to access the system.</p>
+
     <form method="post">
-      <label>Username</label>
-      <input name="username" placeholder="username" required />
-      <div style="height:10px;"></div>
-      <label>Password</label>
-      <input type="password" name="password" placeholder="password" required />
-      <div style="height:14px;"></div>
-      <button class="btn" type="submit">Login</button>
-      <a class="btn secondary" href="{{ url_for('home') }}" style="margin-left:8px;">Back</a>
+        <div class="form-group">
+            <label>Username</label>
+            <input name="username" placeholder="Enter your username" required />
+        </div>
+
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" name="password" placeholder="Enter your password" required />
+        </div>
+
+        <button class="auth-btn" type="submit">Sign In</button>
     </form>
-  </div>
+
+    <a class="back-link" href="{{ url_for('home') }}">← Back to Role Selection</a>
+</div>
 {% endblock %}
