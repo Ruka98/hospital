@@ -268,6 +268,13 @@ def doctor_dashboard():
         LIMIT 200
     """, (doctor_id,)).fetchall()
 
+    notifications = conn.execute("""
+        SELECT * FROM notifications
+        WHERE staff_id=?
+        ORDER BY id DESC
+        LIMIT 50
+    """, (doctor_id,)).fetchall()
+
     conn.close()
     return render_template(
         "doctor_dashboard.html",
@@ -278,6 +285,7 @@ def doctor_dashboard():
         radiologists=radiologists,
         recent_orders=recent_orders,
         recent_assignments=recent_assignments,
+        notifications=notifications,
     )
 
 @app.post("/doctor/orders/create")
@@ -451,13 +459,33 @@ def staff_update_assignment_status(assignment_id):
     if status not in ("Assigned","In Progress","Completed"):
         status = "Assigned"
     conn = db()
-    conn.execute(
-        "UPDATE assignments SET status=? WHERE id=? AND assignee_staff_id=?",
-        (status, assignment_id, staff_id),
-    )
-    conn.commit()
+    # Fetch assignment details first if we need to notify
+    assignment = conn.execute(
+        "SELECT * FROM assignments WHERE id=? AND assignee_staff_id=?",
+        (assignment_id, staff_id)
+    ).fetchone()
+
+    if assignment:
+        conn.execute(
+            "UPDATE assignments SET status=? WHERE id=? AND assignee_staff_id=?",
+            (status, assignment_id, staff_id),
+        )
+
+        if status == "Completed":
+            # Notify Doctor
+            doc_msg = f"Task '{assignment['task_type']}' for patient #{assignment['patient_id']} was completed."
+            conn.execute("INSERT INTO notifications (staff_id, message) VALUES (?,?)", (assignment['doctor_id'], doc_msg))
+
+            # Notify Patient
+            pat_msg = f"Your task '{assignment['task_type']}' has been completed."
+            conn.execute("INSERT INTO patient_notifications (patient_id, message) VALUES (?,?)", (assignment['patient_id'], pat_msg))
+
+        conn.commit()
+        flash("Ticket status updated")
+    else:
+        flash("Assignment not found or access denied")
+
     conn.close()
-    flash("Ticket status updated")
     return redirect(url_for(f"{role}_dashboard"))
 
 def _save_upload(file_storage):
@@ -540,6 +568,13 @@ def patient_dashboard():
         LIMIT 300
     """, (patient_id,)).fetchall()
 
+    notifications = conn.execute("""
+        SELECT * FROM patient_notifications
+        WHERE patient_id=?
+        ORDER BY id DESC
+        LIMIT 50
+    """, (patient_id,)).fetchall()
+
     conn.close()
     return render_template(
         "patient_dashboard.html",
@@ -548,7 +583,19 @@ def patient_dashboard():
         my_orders=my_orders,
         my_assignments=my_assignments,
         my_reports=my_reports,
+        notifications=notifications,
     )
+
+@app.post("/patient/notifications/mark-read/<int:notif_id>")
+def patient_mark_notification_read(notif_id):
+    r = require_role("patient")
+    if r: return r
+    patient_id = session["user_id"]
+    conn = db()
+    conn.execute("UPDATE patient_notifications SET is_read=1 WHERE id=? AND patient_id=?", (notif_id, patient_id))
+    conn.commit()
+    conn.close()
+    return redirect(url_for("patient_dashboard"))
 
 if __name__ == "__main__":
     app.run(debug=True)

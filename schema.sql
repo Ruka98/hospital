@@ -75,3 +75,13 @@ CREATE TABLE IF NOT EXISTS reports (
   FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE,
   FOREIGN KEY(created_by_staff_id) REFERENCES staff(id) ON DELETE CASCADE
 );
+
+-- Notifications for patients
+CREATE TABLE IF NOT EXISTS patient_notifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  patient_id INTEGER NOT NULL,
+  message TEXT NOT NULL,
+  is_read INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY(patient_id) REFERENCES patients(id) ON DELETE CASCADE
+);
