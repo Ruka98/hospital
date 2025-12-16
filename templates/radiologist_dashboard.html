@@ -1,97 +1,190 @@
 {% extends "base.html" %}
 {% block content %}
-  <div class="card">
-    <h1 style="margin-top:0;">{{ title }}</h1>
-    <p class="muted" style="margin-top:0;">
-      Hello <b>{{ me.name }}</b>{% if me.category %} ({{ me.category }}){% endif %}. You will see assignments only when you are marked as <b>available</b> by admin.
-    </p>
-  </div>
+<style>
+    .dashboard-header {
+        background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+        color: white;
+        padding: 32px;
+        border-radius: 12px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    .dashboard-header h1 { margin: 0; font-size: 28px; }
+    .dashboard-header p { margin: 8px 0 0; opacity: 0.9; }
 
-  <div style="height:14px;"></div>
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 8px;
+        border-radius: 9999px;
+        font-size: 12px;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(4px);
+        margin-top: 12px;
+    }
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #10b981;
+        margin-right: 6px;
+    }
+
+    .action-panel {
+        background: #f8fafc;
+        border: 1px border #e2e8f0;
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+    }
+</style>
+
+  <div class="dashboard-header">
+    <h1>{{ title }}</h1>
+    <p>
+      Welcome, <b>{{ me.name }}</b>
+      {% if me.category %}&bull; {{ me.category }}{% endif %}
+    </p>
+    {% if me.is_available %}
+    <div class="status-badge">
+        <div class="status-dot"></div> Available for assignments
+    </div>
+    {% else %}
+    <div class="status-badge" style="background: rgba(239, 68, 68, 0.2);">
+        <div class="status-dot" style="background: #ef4444;"></div> Currently Unavailable
+    </div>
+    {% endif %}
+  </div>
 
   <div class="row">
+    <!-- Notifications Column -->
     <div class="card">
-      <h2 style="margin-top:0;">Notifications</h2>
-      <table>
-        <thead><tr><th>Message</th><th>Status</th><th class="right">Action</th></tr></thead>
-        <tbody>
-          {% for n in notifications %}
-          <tr>
-            <td>{{ n.message }}<div class="muted" style="font-size:12px;">{{ n.created_at }}</div></td>
-            <td>
-              {% if n.is_read %}
-                <span class="pill ok">Read</span>
-              {% else %}
-                <span class="pill warn">New</span>
-              {% endif %}
-            </td>
-            <td class="right">
-              {% if not n.is_read %}
-              <form method="post" action="{{ url_for('staff_mark_notification_read', notif_id=n.id) }}" style="display:inline;">
-                <button class="btn secondary small" type="submit">Mark read</button>
-              </form>
-              {% else %}
-                <span class="muted">-</span>
-              {% endif %}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      <div class="topbar" style="margin-bottom: 12px;">
+        <h2 style="margin:0;">🔔 Notifications</h2>
+      </div>
+
+      {% if notifications %}
+      <div style="max-height: 400px; overflow-y: auto;">
+          <table style="width: 100%;">
+            <tbody>
+              {% for n in notifications %}
+              <tr style="border-bottom: 1px solid #f3f4f6;">
+                <td style="padding: 12px 8px;">
+                    <div style="display:flex; justify-content:space-between; align-items:start;">
+                        <div>
+                            {{ n.message }}
+                            <div class="muted" style="font-size:11px; margin-top:4px;">{{ n.created_at }}</div>
+                        </div>
+                        {% if not n.is_read %}
+                        <form method="post" action="{{ url_for('staff_mark_notification_read', notif_id=n.id) }}">
+                            <button class="btn small pill" style="background:#dbeafe; color:#1e40af; border:none;" type="submit">Mark Read</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+      </div>
+      {% else %}
+        <div class="muted" style="text-align:center; padding: 20px;">No new notifications</div>
+      {% endif %}
     </div>
 
+    <!-- Upload Report Column -->
     <div class="card">
-      <h2 style="margin-top:0;">Add Report / Scan</h2>
-      <form method="post" action="{{ url_for('staff_create_report') }}" enctype="multipart/form-data">
-        <label>Patient ID</label>
-        <input name="patient_id" placeholder="e.g., 1" required />
+      <h2 style="margin-top:0;">📤 Upload Results</h2>
+      <div class="action-panel">
+          <form method="post" action="{{ url_for('staff_create_report') }}" enctype="multipart/form-data">
+            <label>Select Patient</label>
+            <!-- Improved: Could be a dynamic search, but using ID for now as per schema -->
+            <input name="patient_id" type="number" placeholder="Enter Patient ID" required />
 
-        <div style="height:10px;"></div>
-        <label>Report Type</label>
-        <input name="report_type" placeholder="Report / Scan Result / Note" />
+            <div style="height:12px;"></div>
 
-        <div style="height:10px;"></div>
-        <label>Report Text</label>
-        <textarea name="report_text" placeholder="Write findings..."></textarea>
+            <label>Report Type</label>
+            <select name="report_type">
+                <option value="Scan Result" selected>Scan Result</option>
+                <option value="Lab Report">Lab Report</option>
+                <option value="Clinical Note">Clinical Note</option>
+            </select>
 
-        <div style="height:10px;"></div>
-        <label>Upload file (optional)</label>
-        <input type="file" name="image_file" />
+            <div style="height:12px;"></div>
 
-        <div style="height:14px;"></div>
-        <button class="btn" type="submit">Add to Patient</button>
-      </form>
-      <p class="muted" style="margin-bottom:0;">Allowed: PNG/JPG/WEBP/PDF</p>
+            <label>Findings / Notes</label>
+            <textarea name="report_text" placeholder="Enter detailed findings here..." rows="3"></textarea>
+
+            <div style="height:12px;"></div>
+
+            <label>Attach File</label>
+            <div style="border: 2px dashed #cbd5e1; padding: 16px; text-align: center; border-radius: 8px; cursor: pointer; background: white;" onclick="document.getElementById('fileInput').click()">
+                <span class="muted">Click to upload scan/image</span>
+                <input type="file" id="fileInput" name="image_file" style="display:none;" onchange="document.getElementById('fileName').innerText = this.files[0].name" />
+                <div id="fileName" style="font-size: 12px; margin-top: 4px; color: #3b82f6;"></div>
+            </div>
+
+            <div style="height:16px;"></div>
+            <button class="btn" type="submit" style="width:100%;">Submit Report</button>
+          </form>
+      </div>
     </div>
   </div>
 
-  <div style="height:14px;"></div>
+  <div style="height:16px;"></div>
 
+  <!-- Assignments Table -->
   <div class="card">
-    <h2 style="margin-top:0;">My Assignments</h2>
-    <table>
-      <thead><tr><th>ID</th><th>Patient</th><th>Doctor</th><th>Task</th><th>Status</th><th class="right">Update</th></tr></thead>
-      <tbody>
-        {% for a in assignments %}
-        <tr>
-          <td>{{ a.id }}</td>
-          <td>#{{ a.patient_id }} - {{ a.patient_name }}</td>
-          <td>{{ a.doctor_name }}</td>
-          <td>{{ a.task_type }}<div class="muted" style="font-size:12px;">{{ a.notes or "" }}</div></td>
-          <td>{{ a.status }}</td>
-          <td class="right">
-            <form method="post" action="{{ url_for('staff_update_assignment_status', assignment_id=a.id) }}" style="display:flex;gap:8px;justify-content:flex-end;">
-              <select name="status" style="width:170px;">
-                <option value="Assigned" {% if a.status=='Assigned' %}selected{% endif %}>Assigned</option>
-                <option value="In Progress" {% if a.status=='In Progress' %}selected{% endif %}>In Progress</option>
-                <option value="Completed" {% if a.status=='Completed' %}selected{% endif %}>Completed</option>
-              </select>
-              <button class="btn secondary small" type="submit">Save</button>
-            </form>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <h2 style="margin-top:0;">📋 My Assignments</h2>
+    <div style="overflow-x: auto;">
+        <table>
+          <thead>
+              <tr>
+                  <th>ID</th>
+                  <th>Patient</th>
+                  <th>Requesting Doctor</th>
+                  <th>Task Details</th>
+                  <th>Status</th>
+                  <th class="right">Update Status</th>
+              </tr>
+          </thead>
+          <tbody>
+            {% for a in assignments %}
+            <tr>
+              <td>#{{ a.id }}</td>
+              <td>
+                  <div style="font-weight:600;">{{ a.patient_name }}</div>
+                  <div class="muted" style="font-size:12px;">ID: {{ a.patient_id }}</div>
+              </td>
+              <td>{{ a.doctor_name }}</td>
+              <td>
+                  <div style="color: #1e40af; font-weight: 500;">{{ a.task_type }}</div>
+                  <div class="muted" style="font-size:12px;">{{ a.notes or "No notes" }}</div>
+              </td>
+              <td>
+                  <span class="pill {% if a.status == 'Completed' %}ok{% elif a.status == 'In Progress' %}warn{% endif %}">
+                      {{ a.status }}
+                  </span>
+              </td>
+              <td class="right">
+                <form method="post" action="{{ url_for('staff_update_assignment_status', assignment_id=a.id) }}" style="display:flex; gap:8px; justify-content:flex-end; align-items:center;">
+                  <select name="status" style="width: auto; padding: 6px; font-size: 13px;">
+                    <option value="Assigned" {% if a.status=='Assigned' %}selected{% endif %}>Assigned</option>
+                    <option value="In Progress" {% if a.status=='In Progress' %}selected{% endif %}>In Progress</option>
+                    <option value="Completed" {% if a.status=='Completed' %}selected{% endif %}>Completed</option>
+                  </select>
+                  <button class="btn secondary small" type="submit">Update</button>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="text-align:center; padding: 20px;" class="muted">No active assignments found.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+    </div>
   </div>
 {% endblock %}

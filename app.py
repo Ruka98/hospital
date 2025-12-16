@@ -153,7 +153,16 @@ def admin_create_staff():
     if r: return r
     name = request.form.get("name","").strip()
     role = request.form.get("role","").strip()
+    # Robust category handling: trust hidden input first (JS), fall back to manual reconstruction
     category = request.form.get("category","").strip()
+    if not category or category == "Other":
+        cat_select = request.form.get("category_select","").strip()
+        cat_other = request.form.get("category_other","").strip()
+        if cat_select == "Other" and cat_other:
+            category = cat_other
+        elif cat_select and cat_select != "Other":
+            category = cat_select
+
     username = request.form.get("username","").strip()
     password = request.form.get("password","")
     phone = request.form.get("phone","").strip()
